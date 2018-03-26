@@ -25,24 +25,24 @@ def oldest_directory(path):
 
     oldesttime = time.time()
     oldestdir = None
-    for dir in os.listdir(path):
-        fullpath = path+'/'+dir
-        if os.path.getmtime(fullpath) <= oldesttime:
-            oldesttime= os.path.getmtime(fullpath)
+    for fname in os.listdir(path):
+        fullpath = os.path.join(path, fname)
+        if os.path.isdir(fullpath) and os.path.getmtime(fullpath) <= oldesttime:
+            oldesttime = os.path.getmtime(fullpath)
             oldestdir = fullpath
     return oldestdir
     
 if __name__ == '__main__':
-    root = '/media/usb'
-    path = '/media/usb'
-    minimumfreespace = 100 * 1024
-    print minimumfreespace
-    cleanupfreespace = 500 * minimumfreespace
-    print disk_free(root)
-    if disk_free(root) <= minimumfreespace:
-        while disk_free(root) <= cleanupfreespace:
+    #path = '/media/usb'
+    path = '/home/camera/motion'
+    minimumfreespace = 1000000
+    cleanupfreespace = 5 * minimumfreespace
+    if disk_free(path) <= minimumfreespace:
+        while disk_free(path) <= cleanupfreespace:
+            itemtodelete = oldest_directory(path)
             try:
-                if oldest_directory(path)!= None:
-                    shutil.rmtree(oldest_directory(path))
+                if itemtodelete != None:
+                    shutil.rmtree(itemtodelete)
             except:
-                pass
+                print "Delete failed on ",itemtodelete
+                raise
