@@ -1,17 +1,25 @@
 #!/usr/bin/python
 
-import os, time, sys, shutil
+from __future__ import print_function
+from __future__ import division
+
+import os
+import time
+import sys
+import shutil
+import argparse
+
 
 def disk_free(path):
     """
     path: string
     Gets the disk usage statistics about the given path.
-    returns: free space, in kbytes.
+    returns: free space in kbytes.
     """
 
     st = os.statvfs(path)
-    rtob = st.f_frsize / 1024
-    free = st.f_bavail * rtob 
+    rtob = st.f_frsize // 1024
+    free = st.f_bavail * rtob
     total = st.f_blocks * rtob
     used = (st.f_blocks - st.f_bfree) * rtob
     return free
@@ -31,18 +39,29 @@ def oldest_directory(path):
             oldesttime = os.path.getmtime(fullpath)
             oldestdir = fullpath
     return oldestdir
-    
-if __name__ == '__main__':
-    #path = '/media/usb'
-    path = '/home/camera/motion'
-    minimumfreespace = 1000000
+
+def main():
+    parser = argparse.ArgumentParser(description="Check the amount of free diskspace for a directory and then delete subdirectories if space gets low")
+    parser.add_argument("directory", help="Path to the directory to clean up")
+    parser.add_argument("-m", "--minimumfreespace", type=int, default=1000000, help="The minimum freespace to allow before starting the clean-up")
+    args = parser.parse_args()
+    minimumfreespace = args.minimumfreespace
+    basepath = args.directory
+    if not os.path.isdir(basepath):
+        print(basepath," isn't a valid directory")
+        exit()
     cleanupfreespace = 5 * minimumfreespace
-    if disk_free(path) <= minimumfreespace:
-        while disk_free(path) <= cleanupfreespace:
-            itemtodelete = oldest_directory(path)
+    if disk_free(basepath) <= minimumfreespace:
+        while disk_free(basepath) <= cleanupfreespace:
+            itemtodelete = oldest_directory(basepath)
+            if itemtodelete == None:
+                print ("Can't clear up enough freespace, no more valid directories to delete")
+                exit()
             try:
-                if itemtodelete != None:
-                    shutil.rmtree(itemtodelete)
+                shutil.rmtree(itemtodelete)
             except:
-                print "Delete failed on ",itemtodelete
+                print ("Delete failed on ",itemtodelete)
                 raise
+
+if __name__ == '__main__':
+    main()
