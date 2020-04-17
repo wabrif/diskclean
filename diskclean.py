@@ -40,10 +40,27 @@ def oldest_directory(path):
             oldestdir = fullpath
     return oldestdir
 
+def oldest_file(path):
+    """
+    path: string
+    Gets the oldest file in a path
+    returns: name of the oldest file
+    """
+
+    oldesttime = time.time()
+    oldestfile = None
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        for file in filenames:
+            fullpath = os.path.join(dirpath, file)
+            if os.path.getmtime(fullpath) <= oldesttime:
+                oldesttime = os.path.getmtime(fullpath)
+                oldestfile = fullpath
+    return oldestfile
+
 def main():
     parser = argparse.ArgumentParser(description="Check the amount of free diskspace for a directory and then delete subdirectories if space gets low")
     parser.add_argument("directory", help="Path to the directory to clean up")
-    parser.add_argument("-m", "--minimumfreespace", type=int, default=1000000, help="The minimum freespace to allow before starting the clean-up")
+    parser.add_argument("-m", "--minimumfreespace", type=int, default=10000000, help="The minimum freespace to allow before starting the clean-up")
     args = parser.parse_args()
     minimumfreespace = args.minimumfreespace
     basepath = args.directory
