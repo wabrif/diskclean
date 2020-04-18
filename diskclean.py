@@ -24,11 +24,11 @@ def disk_free(path):
     used = (st.f_blocks - st.f_bfree) * rtob
     return free
 
-def oldest_directory(path):
+def rm_oldest_directory(path):
     """
     path: string
-    Gets the oldest directory in a path
-    returns: name of the oldest directory
+    Gets the oldest directory in a path and removes it
+    returns: name of the oldest directory it deleted, None if it can't find one
     """
 
     oldesttime = time.time()
@@ -38,13 +38,18 @@ def oldest_directory(path):
         if os.path.isdir(fullpath) and os.path.getmtime(fullpath) <= oldesttime:
             oldesttime = os.path.getmtime(fullpath)
             oldestdir = fullpath
+    try:
+        shutil.rmtree(oldestdir)
+    except:
+        print ("Delete failed on ",oldestdir)
+        #raise
     return oldestdir
 
-def oldest_file(path):
+def rm_oldest_file(path):
     """
     path: string
-    Gets the oldest file in a path
-    returns: name of the oldest file
+    Gets the oldest file in a path and removes it
+    returns: name of the oldest file it deleted, None if it can't find one
     """
 
     oldesttime = time.time()
@@ -55,12 +60,18 @@ def oldest_file(path):
             if os.path.getmtime(fullpath) <= oldesttime:
                 oldesttime = os.path.getmtime(fullpath)
                 oldestfile = fullpath
+    try:
+        os.remove(oldestfile)
+    except:
+        print ("Delete failed on ",oldestfile)
+        #raise
     return oldestfile
 
 def main():
-    parser = argparse.ArgumentParser(description="Check the amount of free diskspace for a directory and then delete subdirectories if space gets low")
+    parser = argparse.ArgumentParser(description="Check the amount of free diskspace for a directory and then delete the oldest files if space gets low")
     parser.add_argument("directory", help="Path to the directory to clean up")
-    parser.add_argument("-m", "--minimumfreespace", type=int, default=10000000, help="The minimum freespace to allow before starting the clean-up")
+    parser.add_argument("-m", "--minimumfreespace", type=int, default=10000000, help="The minimum freespace to allow before starting the clean-up. Default=10000000")
+    parser.add_argument("-s", "--subdir", action="store_true", help="Delete subdirectories instead of files")
     args = parser.parse_args()
     minimumfreespace = args.minimumfreespace
     basepath = args.directory
@@ -70,15 +81,14 @@ def main():
     cleanupfreespace = 5 * minimumfreespace
     if disk_free(basepath) <= minimumfreespace:
         while disk_free(basepath) <= cleanupfreespace:
-            itemtodelete = oldest_directory(basepath)
-            if itemtodelete == None:
-                print ("Can't clear up enough freespace, no more valid directories to delete")
-                exit()
-            try:
-                shutil.rmtree(itemtodelete)
-            except:
-                print ("Delete failed on ",itemtodelete)
-                raise
+            if args.subdir:
+                if rm_oldest_directory(basepath) == None:
+                    print ("Can't clear up enough freespace, no more directories to delete")
+                    exit()
+            else:
+                if rm_oldest_file(basepath) == None:
+                    print ("Can't clear up enough freespace, no more files to delete")
+                    exit()
 
 if __name__ == '__main__':
     main()
